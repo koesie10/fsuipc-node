@@ -454,3 +454,4 @@ __pycache__/
 # End of https://www.gitignore.io/api/c++,node,intellij+all,visualstudio,visualstudiocode
 
 /build/
+/test/hello_ts.js

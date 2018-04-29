@@ -34,6 +34,13 @@ class PromiseWorker {
       HandleOKCallback();
     else
       HandleErrorCallback();
+
+    // KickNextTick(), which will make sure our promises work even with setTimeout or setInterval
+    // See https://github.com/nodejs/nan/issues/539
+    Nan::Callback(
+      Nan::New<v8::Function>(
+          [](const Nan::FunctionCallbackInfo<v8::Value>& info) {}, Nan::Null()))
+      .Call(0, nullptr);
   }
 
   inline void SaveToPersistent(const char* key,
@@ -89,8 +96,7 @@ class PromiseWorker {
   virtual void HandleOKCallback() {
     Nan::HandleScope scope;
 
-    v8::Local<v8::Object> obj = Nan::New<v8::Object>();
-    Nan::New(resolver)->Resolve(obj);
+    Nan::New(resolver)->Resolve(Nan::Undefined());
   }
 
   virtual void HandleErrorCallback() {

@@ -2,7 +2,11 @@
   "name": "fsuipc",
   "version": "0.1.0",
   "description": "Node bindings for FSUIPC",
-  "keywords": ["fsuipc", "fsx", "p3d"],
+  "keywords": [
+    "fsuipc",
+    "fsx",
+    "p3d"
+  ],
   "license": "MIT",
   "main": "./main.js",
   "repository": {
@@ -20,7 +24,14 @@
   "engines": {
     "node": ">=6.0"
   },
-  "os": ["win32"],
-  "cpu": ["x64"],
-  "types": "./index.d.ts"
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "types": "./index.d.ts",
+  "devDependencies": {
+    "@types/node": "^8.0.0"
+  }
 }
