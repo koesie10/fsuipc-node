@@ -4,9 +4,8 @@
             "target_name": "fsuipc",
             "sources": [
                 "src/index.cc",
-                "src/fsuipc.cc",
-                "include/fsuipc/IPCuser64.c",
-                "include/fsuipc/vector.c"
+                "src/FSUIPC.cc",
+                "src/IPCUser.cc"
             ],
             "include_dirs" : [
                 "src",

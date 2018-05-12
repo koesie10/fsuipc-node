@@ -9,6 +9,7 @@
 #include <nan.h>
 
 #include "helpers.h"
+#include "IPCUser.h"
 
 namespace FSUIPC {
 enum class Type {
@@ -44,6 +45,8 @@ struct Offset {
 // https://medium.com/netscape/tutorial-building-native-c-modules-for-node-js-using-nan-part-1-755b07389c7c
 class FSUIPC : public Nan::ObjectWrap {
   friend class ProcessAsyncWorker;
+  friend class OpenAsyncWorker;
+  friend class CloseAsyncWorker;
 
  public:
   static NAN_MODULE_INIT(Init);
@@ -58,9 +61,17 @@ class FSUIPC : public Nan::ObjectWrap {
 
   static Nan::Persistent<v8::FunctionTemplate> constructor;
 
+  ~FSUIPC() {
+    if (this->ipc) {
+      delete this->ipc;
+    }
+  }
+
  protected:
   std::map<std::string, Offset> offsets;
   std::mutex offsets_mutex;
+  std::mutex fsuipc_mutex;
+  IPCUser *ipc;
 };
 
 class ProcessAsyncWorker : public PromiseWorker {
@@ -86,7 +97,7 @@ class OpenAsyncWorker : public PromiseWorker {
  public:
   FSUIPC* fsuipc;
 
-  OpenAsyncWorker(FSUIPC* fsuipc, int requestedSim) : PromiseWorker() {
+  OpenAsyncWorker(FSUIPC* fsuipc, Simulator requestedSim) : PromiseWorker() {
     this->fsuipc = fsuipc;
     this->requestedSim = requestedSim;
   }
@@ -97,7 +108,7 @@ class OpenAsyncWorker : public PromiseWorker {
   void HandleErrorCallback();
 
  private:
-  int requestedSim;
+  Simulator requestedSim;
   int errorCode;
 };
 

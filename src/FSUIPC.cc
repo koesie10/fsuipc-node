@@ -5,31 +5,11 @@
 #include <node.h>
 
 #include <windows.h>
-#include "../include/fsuipc/FSUIPC_User64.h"
 
 #include "FSUIPC.h"
+#include "IPCUser.h"
 
 namespace FSUIPC {
-
-const char* pszErrors[] = {
-    "Okay",
-    "Attempt to Open when already Open",
-    "Cannot link to FSUIPC or WideClient",
-    "Failed to Register common message with Windows",
-    "Failed to create Atom for mapping filename",
-    "Failed to create a file mapping object",
-    "Failed to open a view to the file map",
-    "Incorrect version of FSUIPC, or not FSUIPC",
-    "Sim is not version requested",
-    "Call cannot execute, link not Open",
-    "Call cannot execute: no requests accumulated",
-    "IPC timed out all retries",
-    "IPC sendmessage failed all retries",
-    "IPC request contains bad data",
-    "Maybe running on WideClient, but FS not running on Server, or wrong "
-    "FSUIPC",
-    "Read or Write request cannot be added, memory for Process is full",
-};
 
 Nan::Persistent<v8::FunctionTemplate> FSUIPC::constructor;
 Nan::Persistent<v8::Object> FSUIPCError;
@@ -65,6 +45,7 @@ NAN_METHOD(FSUIPC::New) {
   }
 
   FSUIPC* fsuipc = new FSUIPC();
+  fsuipc->ipc = new IPCUser();
   fsuipc->Wrap(info.Holder());
 
   info.GetReturnValue().Set(info.Holder());
@@ -73,7 +54,7 @@ NAN_METHOD(FSUIPC::New) {
 NAN_METHOD(FSUIPC::Open) {
   FSUIPC* self = Nan::ObjectWrap::Unwrap<FSUIPC>(info.This());
 
-  DWORD requestedSim = SIM_ANY;
+  Simulator requestedSim = Simulator::ANY;
 
   if (info.Length() > 0) {
     if (!info[0]->IsUint32()) {
@@ -82,7 +63,7 @@ NAN_METHOD(FSUIPC::Open) {
               .ToLocalChecked());
     }
 
-    requestedSim = (DWORD) info[0]->Uint32Value();
+    requestedSim = static_cast<Simulator>(info[0]->Uint32Value());
   }
 
   auto worker = new OpenAsyncWorker(self, requestedSim);
@@ -218,26 +199,26 @@ NAN_METHOD(FSUIPC::Remove) {
 }
 
 void ProcessAsyncWorker::Execute() {
-  DWORD dwResult;
+  Error result;
 
   std::lock_guard<std::mutex> guard(this->fsuipc->offsets_mutex);
+  std::lock_guard<std::mutex> fsuipc_guard(this->fsuipc->fsuipc_mutex);
 
   auto offsets = this->fsuipc->offsets;
 
   std::map<std::string, Offset>::iterator it = offsets.begin();
 
   for (; it != offsets.end(); ++it) {
-    if (!FSUIPC_Read(it->second.offset, it->second.size, it->second.dest,
-                     &dwResult)) {
-      this->SetErrorMessage(pszErrors[dwResult]);
-      this->errorCode = (int)dwResult;
+    if (!this->fsuipc->ipc->Read(it->second.offset, it->second.size, it->second.dest, &result)) {
+      this->SetErrorMessage(ErrorToString(result));
+      this->errorCode = static_cast<int>(result);
       return;
     }
   }
 
-  if (!FSUIPC_Process(&dwResult)) {
-    this->SetErrorMessage(pszErrors[dwResult]);
-    this->errorCode = (int)dwResult;
+  if (!this->fsuipc->ipc->Process(&result)) {
+    this->SetErrorMessage(ErrorToString(result));
+    this->errorCode = static_cast<int>(result);
     return;
   }
 }
@@ -352,11 +333,13 @@ DWORD get_size_of_type(Type type) {
 }
 
 void OpenAsyncWorker::Execute() {
-  DWORD dwResult;
+  Error result;
 
-  if (!FSUIPC_Open(this->requestedSim, &dwResult)) {
-    this->SetErrorMessage(pszErrors[dwResult]);
-    this->errorCode = (int) dwResult;
+  std::lock_guard<std::mutex> fsuipc_guard(this->fsuipc->fsuipc_mutex);
+
+  if (!this->fsuipc->ipc->Open(this->requestedSim, &result)) {
+    this->SetErrorMessage(ErrorToString(result));
+    this->errorCode = static_cast<int>(result);
     return;
   }
 }
@@ -379,7 +362,9 @@ void OpenAsyncWorker::HandleErrorCallback() {
 }
 
 void CloseAsyncWorker::Execute() {
-  FSUIPC_Close();
+  std::lock_guard<std::mutex> fsuipc_guard(this->fsuipc->fsuipc_mutex);
+
+  this->fsuipc->ipc->Close();
 }
 
 void CloseAsyncWorker::HandleOKCallback() {
@@ -442,37 +427,37 @@ NAN_MODULE_INIT(InitError) {
 
   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
   Nan::DefineOwnProperty(obj, Nan::New("OK").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_OK), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::OK)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("OPEN").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_OPEN), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::OPEN)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("NOFS").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_NOFS), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::NOFS)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("REGMSG").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_REGMSG), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::REGMSG)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("ATOM").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_ATOM), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::ATOM)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("MAP").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_MAP), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::MAP)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("VIEW").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_VIEW), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::VIEW)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("VERSION").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_VERSION), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::VERSION)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("WRONGFS").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_WRONGFS), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::WRONGFS)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("NOTOPEN").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_NOTOPEN), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::NOTOPEN)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("NODATA").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_NODATA), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::NODATA)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("TIMEOUT").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_TIMEOUT), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::TIMEOUT)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("SENDMSG").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_SENDMSG), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::SENDMSG)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("DATA").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_DATA), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::DATA)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("RUNNING").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_RUNNING), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::RUNNING)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("SIZE").ToLocalChecked(),
-                         Nan::New(FSUIPC_ERR_SIZE), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::SIZE)), v8::ReadOnly);
 
   target->Set(Nan::New("ErrorCode").ToLocalChecked(), obj);
 }
@@ -480,31 +465,31 @@ NAN_MODULE_INIT(InitError) {
 NAN_MODULE_INIT(InitSimulator) {
   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
   Nan::DefineOwnProperty(obj, Nan::New("ANY").ToLocalChecked(),
-                         Nan::New(SIM_ANY), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::ANY)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS98").ToLocalChecked(),
-                         Nan::New(SIM_FS98), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS98)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS2K").ToLocalChecked(),
-                         Nan::New(SIM_FS2K), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS2K)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("CFS2").ToLocalChecked(),
-                         Nan::New(SIM_CFS2), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::CFS2)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("CFS1").ToLocalChecked(),
-                         Nan::New(SIM_CFS1), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::CFS1)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FLY").ToLocalChecked(),
-                         Nan::New(SIM_FLY), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FLY)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS2K2").ToLocalChecked(),
-                         Nan::New(SIM_FS2K2), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS2K2)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS2K4").ToLocalChecked(),
-                         Nan::New(SIM_FS2K4), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS2K4)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FSX").ToLocalChecked(),
-                         Nan::New(SIM_FSX), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FSX)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("ESP").ToLocalChecked(),
-                         Nan::New(SIM_ESP), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::ESP)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("P3D").ToLocalChecked(),
-                         Nan::New(SIM_P3D), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::P3D)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FSX64").ToLocalChecked(),
-                         Nan::New(SIM_FSX64), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FSX64)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("P3D64").ToLocalChecked(),
-                         Nan::New(SIM_P3D64), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::P3D64)), v8::ReadOnly);
 
   target->Set(Nan::New("Simulator").ToLocalChecked(), obj);
 }
