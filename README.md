@@ -46,6 +46,10 @@ obj.open()
 
 ## Release History
 
+* 0.3.0
+    * Add support for Node 12.0, drop support for Node < 11.0
+* 0.2.0
+    * Stability improvements
 * 0.1.0
     * Initial release
 
