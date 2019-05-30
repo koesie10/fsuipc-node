@@ -23,7 +23,7 @@
     "configure": "node-gyp configure"
   },
   "engines": {
-    "node": ">=6.0"
+    "node": ">=11.0"
   },
   "os": [
     "win32"

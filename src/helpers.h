@@ -11,10 +11,13 @@ class PromiseWorker {
 
     Nan::HandleScope scope;
 
-    resolver.Reset(v8::Promise::Resolver::New(v8::Isolate::GetCurrent()));
+    resolver.Reset(
+        v8::Promise::Resolver::New(Nan::GetCurrentContext()).ToLocalChecked());
 
     v8::Local<v8::Object> obj = Nan::New<v8::Object>();
     persistentHandle.Reset(obj);
+
+    async_resource = new Nan::AsyncResource("PromiseWorker", obj);
   }
 
   virtual ~PromiseWorker() {
@@ -25,6 +28,8 @@ class PromiseWorker {
     if (!resolver.IsEmpty())
       resolver.Reset();
     delete[] errmsg_;
+
+    delete async_resource;
   }
 
   virtual void WorkComplete() {
@@ -35,47 +40,54 @@ class PromiseWorker {
     else
       HandleErrorCallback();
 
-    // KickNextTick(), which will make sure our promises work even with setTimeout or setInterval
-    // See https://github.com/nodejs/nan/issues/539
-    Nan::Callback(
-      Nan::New<v8::Function>(
-          [](const Nan::FunctionCallbackInfo<v8::Value>& info) {}, Nan::Null()))
-      .Call(0, nullptr);
+    // KickNextTick(), which will make sure our promises work even with
+    // setTimeout or setInterval See https://github.com/nodejs/nan/issues/539
+    Nan::Callback(Nan::New<v8::Function>(
+                      [](const Nan::FunctionCallbackInfo<v8::Value>& info) {},
+                      Nan::Null()))
+        .Call(0, nullptr, async_resource);
   }
 
   inline void SaveToPersistent(const char* key,
                                const v8::Local<v8::Value>& value) {
     Nan::HandleScope scope;
-    Nan::New(persistentHandle)->Set(Nan::New(key).ToLocalChecked(), value);
+    Nan::New(persistentHandle)
+        ->Set(Nan::GetCurrentContext(), Nan::New(key).ToLocalChecked(), value);
   }
 
   inline void SaveToPersistent(const v8::Local<v8::String>& key,
                                const v8::Local<v8::Value>& value) {
     Nan::HandleScope scope;
-    Nan::New(persistentHandle)->Set(key, value);
+    Nan::New(persistentHandle)->Set(Nan::GetCurrentContext(), key, value);
   }
 
   inline void SaveToPersistent(uint32_t index,
                                const v8::Local<v8::Value>& value) {
     Nan::HandleScope scope;
-    Nan::New(persistentHandle)->Set(index, value);
+    Nan::New(persistentHandle)->Set(Nan::GetCurrentContext(), index, value);
   }
 
   inline v8::Local<v8::Value> GetFromPersistent(const char* key) const {
     Nan::EscapableHandleScope scope;
     return scope.Escape(
-        Nan::New(persistentHandle)->Get(Nan::New(key).ToLocalChecked()));
+        Nan::New(persistentHandle)
+            ->Get(Nan::GetCurrentContext(), Nan::New(key).ToLocalChecked())
+            .ToLocalChecked());
   }
 
   inline v8::Local<v8::Value> GetFromPersistent(
       const v8::Local<v8::String>& key) const {
     Nan::EscapableHandleScope scope;
-    return scope.Escape(Nan::New(persistentHandle)->Get(key));
+    return scope.Escape(Nan::New(persistentHandle)
+                            ->Get(Nan::GetCurrentContext(), key)
+                            .ToLocalChecked());
   }
 
   inline v8::Local<v8::Value> GetFromPersistent(uint32_t index) const {
     Nan::EscapableHandleScope scope;
-    return scope.Escape(Nan::New(persistentHandle)->Get(index));
+    return scope.Escape(Nan::New(persistentHandle)
+                            ->Get(Nan::GetCurrentContext(), index)
+                            .ToLocalChecked());
   }
 
   virtual void Execute() = 0;
@@ -92,18 +104,21 @@ class PromiseWorker {
  protected:
   Nan::Persistent<v8::Object> persistentHandle;
   Nan::Persistent<v8::Promise::Resolver> resolver;
+  Nan::AsyncResource* async_resource;
 
   virtual void HandleOKCallback() {
     Nan::HandleScope scope;
 
-    Nan::New(resolver)->Resolve(Nan::Undefined());
+    Nan::New(resolver)->Resolve(Nan::GetCurrentContext(), Nan::Undefined());
   }
 
   virtual void HandleErrorCallback() {
     Nan::HandleScope scope;
 
-    Nan::New(resolver)->Reject(v8::Exception::Error(
-        Nan::New<v8::String>(ErrorMessage()).ToLocalChecked()));
+    Nan::New(resolver)->Reject(
+        Nan::GetCurrentContext(),
+        v8::Exception::Error(
+            Nan::New<v8::String>(ErrorMessage()).ToLocalChecked()));
   }
 
   void SetErrorMessage(const char* msg) {

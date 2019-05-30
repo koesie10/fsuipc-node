@@ -29,7 +29,8 @@ NAN_MODULE_INIT(FSUIPC::Init) {
   Nan::SetPrototypeMethod(ctor, "add", Add);
   Nan::SetPrototypeMethod(ctor, "remove", Remove);
 
-  target->Set(Nan::New("FSUIPC").ToLocalChecked(), ctor->GetFunction());
+  target->Set(Nan::GetCurrentContext(), Nan::New("FSUIPC").ToLocalChecked(),
+              ctor->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
 }
 
 NAN_METHOD(FSUIPC::New) {
@@ -63,7 +64,7 @@ NAN_METHOD(FSUIPC::Open) {
               .ToLocalChecked());
     }
 
-    requestedSim = static_cast<Simulator>(info[0]->Uint32Value());
+    requestedSim = static_cast<Simulator>(info[0]->Uint32Value(Nan::GetCurrentContext()).ToChecked());
   }
 
   auto worker = new OpenAsyncWorker(self, requestedSim);
@@ -120,8 +121,8 @@ NAN_METHOD(FSUIPC::Add) {
   }
 
   std::string name = std::string(*Nan::Utf8String(info[0]));
-  DWORD offset = info[1]->Uint32Value();
-  Type type = (Type)info[2]->Int32Value();
+  DWORD offset = info[1]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+  Type type = (Type)info[2]->Int32Value(Nan::GetCurrentContext()).ToChecked();
 
   DWORD size;
 
@@ -140,7 +141,7 @@ NAN_METHOD(FSUIPC::Add) {
               .ToLocalChecked());
     }
 
-    size = (int)info[3]->Uint32Value();
+    size = (int)info[3]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
   } else {
     size = get_size_of_type(type);
   }
@@ -238,7 +239,7 @@ void ProcessAsyncWorker::HandleOKCallback() {
              this->GetValue(it->second.type, it->second.dest, it->second.size));
   }
 
-  Nan::New(resolver)->Resolve(obj);
+  Nan::New(resolver)->Resolve(Nan::GetCurrentContext(), obj);
 }
 
 void ProcessAsyncWorker::HandleErrorCallback() {
@@ -249,7 +250,7 @@ void ProcessAsyncWorker::HandleErrorCallback() {
   v8::Local<v8::Value> error =
       Nan::CallAsConstructor(Nan::New(FSUIPCError), 2, argv).ToLocalChecked();
 
-  Nan::New(resolver)->Reject(error);
+  Nan::New(resolver)->Reject(Nan::GetCurrentContext(), error);
 }
 
 v8::Local<v8::Value> ProcessAsyncWorker::GetValue(Type type,
@@ -292,7 +293,7 @@ v8::Local<v8::Value> ProcessAsyncWorker::GetValue(Type type,
         int bit_index = i % 8;
         int mask = 1 << bit_index;
         bool value = (bits[byte_index] & mask) != 0;
-        arr->Set(i, Nan::New(value));
+        arr->Set(Nan::GetCurrentContext(), i, Nan::New(value));
       }
       return scope.Escape(arr);
     }
@@ -300,7 +301,7 @@ v8::Local<v8::Value> ProcessAsyncWorker::GetValue(Type type,
       v8::Local<v8::Array> arr = Nan::New<v8::Array>(length);
       uint8_t* bytes = (uint8_t*)data;
       for (int i = 0; i < length; i++) {
-        arr->Set(i, Nan::New(*bytes));
+        arr->Set(Nan::GetCurrentContext(), i, Nan::New(*bytes));
         bytes++;
       }
       return scope.Escape(arr);
@@ -347,7 +348,7 @@ void OpenAsyncWorker::Execute() {
 void OpenAsyncWorker::HandleOKCallback() {
   Nan::HandleScope scope;
 
-  Nan::New(resolver)->Resolve(this->fsuipc->handle());
+  Nan::New(resolver)->Resolve(Nan::GetCurrentContext(), this->fsuipc->handle());
 }
 
 void OpenAsyncWorker::HandleErrorCallback() {
@@ -358,7 +359,7 @@ void OpenAsyncWorker::HandleErrorCallback() {
   v8::Local<v8::Value> error =
       Nan::CallAsConstructor(Nan::New(FSUIPCError), 2, argv).ToLocalChecked();
 
-  Nan::New(resolver)->Reject(error);
+  Nan::New(resolver)->Reject(Nan::GetCurrentContext(), error);
 }
 
 void CloseAsyncWorker::Execute() {
@@ -370,7 +371,7 @@ void CloseAsyncWorker::Execute() {
 void CloseAsyncWorker::HandleOKCallback() {
   Nan::HandleScope scope;
 
-  Nan::New(resolver)->Resolve(this->fsuipc->handle());
+  Nan::New(resolver)->Resolve(Nan::GetCurrentContext(), this->fsuipc->handle());
 }
 
 NAN_MODULE_INIT(InitType) {
@@ -402,7 +403,7 @@ NAN_MODULE_INIT(InitType) {
   Nan::DefineOwnProperty(obj, Nan::New("BitArray").ToLocalChecked(),
                          Nan::New((int)Type::BitArray), v8::ReadOnly);
 
-  target->Set(Nan::New("Type").ToLocalChecked(), obj);
+  target->Set(Nan::GetCurrentContext(), Nan::New("Type").ToLocalChecked(), obj);
 }
 
 NAN_MODULE_INIT(InitError) {
@@ -418,12 +419,15 @@ NAN_MODULE_INIT(InitError) {
       "FSUIPCError";
   v8::Local<Nan::BoundScript> script =
       Nan::CompileScript(Nan::New(code).ToLocalChecked()).ToLocalChecked();
-  v8::Local<v8::Object> errorFunc =
-      Nan::RunScript(script).ToLocalChecked()->ToObject();
+  v8::Local<v8::Object> errorFunc = Nan::RunScript(script)
+                                        .ToLocalChecked()
+                                        ->ToObject(Nan::GetCurrentContext())
+                                        .ToLocalChecked();
 
   FSUIPCError.Reset(errorFunc);
 
-  target->Set(Nan::New("FSUIPCError").ToLocalChecked(), errorFunc);
+  target->Set(Nan::GetCurrentContext(),
+              Nan::New("FSUIPCError").ToLocalChecked(), errorFunc);
 
   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
   Nan::DefineOwnProperty(obj, Nan::New("OK").ToLocalChecked(),
@@ -459,7 +463,8 @@ NAN_MODULE_INIT(InitError) {
   Nan::DefineOwnProperty(obj, Nan::New("SIZE").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::SIZE)), v8::ReadOnly);
 
-  target->Set(Nan::New("ErrorCode").ToLocalChecked(), obj);
+  target->Set(Nan::GetCurrentContext(), Nan::New("ErrorCode").ToLocalChecked(),
+              obj);
 }
 
 NAN_MODULE_INIT(InitSimulator) {
@@ -491,7 +496,8 @@ NAN_MODULE_INIT(InitSimulator) {
   Nan::DefineOwnProperty(obj, Nan::New("P3D64").ToLocalChecked(),
                          Nan::New(static_cast<int>(Simulator::P3D64)), v8::ReadOnly);
 
-  target->Set(Nan::New("Simulator").ToLocalChecked(), obj);
+  target->Set(Nan::GetCurrentContext(), Nan::New("Simulator").ToLocalChecked(),
+              obj);
 }
 
 }  // namespace FSUIPC

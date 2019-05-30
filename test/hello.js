@@ -19,6 +19,6 @@ obj.open()
     })
     .catch((err) => {
       console.error(err);
-      
+
       return obj.close();
     });
