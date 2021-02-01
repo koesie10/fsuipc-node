@@ -495,6 +495,9 @@ NAN_MODULE_INIT(InitSimulator) {
                          Nan::New(static_cast<int>(Simulator::FSX64)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("P3D64").ToLocalChecked(),
                          Nan::New(static_cast<int>(Simulator::P3D64)), v8::ReadOnly);
+  Nan::DefineOwnProperty(obj, Nan::New("MSFS").ToLocalChecked(),
+                         Nan::New(static_cast<int>(Simulator::MSFS)), v8::ReadOnly);
+                         
 
   target->Set(Nan::GetCurrentContext(), Nan::New("Simulator").ToLocalChecked(),
               obj);

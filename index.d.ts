@@ -37,7 +37,8 @@ export enum Simulator {
   ESP,
   P3D,
   FSX64,
-  P3D64
+  P3D64,
+  MSFS,
 }
 
 export class FSUIPC {

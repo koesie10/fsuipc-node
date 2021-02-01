@@ -78,7 +78,8 @@ enum class Simulator: int {
     ESP = 9,
     P3D = 10,
     FSX64 = 11,
-    P3D64 = 12
+    P3D64 = 12,
+    MSFS = 13
 };
 
 class IPCUser {
