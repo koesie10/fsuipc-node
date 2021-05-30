@@ -37,7 +37,8 @@ export enum Simulator {
   ESP,
   P3D,
   FSX64,
-  P3D64
+  P3D64,
+  MSFS,
 }
 
 type FixedSizedNumberType = Type.Byte|Type.SByte|Type.Int16|Type.Int32|Type.UInt16|Type.UInt32|Type.Double|Type.Single;
