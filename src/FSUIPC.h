@@ -1,15 +1,15 @@
 #ifndef FSUIPC_H
 #define FSUIPC_H
 
+#include <nan.h>
+
 #include <map>
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include <nan.h>
-
-#include "helpers.h"
 #include "IPCUser.h"
+#include "helpers.h"
 
 namespace FSUIPC {
 enum class Type {
@@ -46,7 +46,7 @@ struct OffsetWrite {
   Type type;
   DWORD offset;
   DWORD size;
-  void* src; // Will be freed on Process()
+  void* src;  // Will be freed on Process()
 };
 
 // https://medium.com/netscape/tutorial-building-native-c-modules-for-node-js-using-nan-part-1-755b07389c7c
@@ -80,7 +80,7 @@ class FSUIPC : public Nan::ObjectWrap {
   std::vector<OffsetWrite> offset_writes;
   std::mutex offsets_mutex;
   std::mutex fsuipc_mutex;
-  IPCUser *ipc;
+  IPCUser* ipc;
 };
 
 class ProcessAsyncWorker : public PromiseWorker {
