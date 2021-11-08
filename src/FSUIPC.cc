@@ -462,6 +462,8 @@ NAN_MODULE_INIT(InitError) {
                          Nan::New(static_cast<int>(Error::RUNNING)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("SIZE").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::SIZE)), v8::ReadOnly);
+  Nan::DefineOwnProperty(obj, Nan::New("EPERMISSION").ToLocalChecked(),
+                         Nan::New(static_cast<int>(Error::EPERMISSION)), v8::ReadOnly);
 
   target->Set(Nan::GetCurrentContext(), Nan::New("ErrorCode").ToLocalChecked(),
               obj);

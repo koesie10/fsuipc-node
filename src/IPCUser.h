@@ -23,7 +23,8 @@ enum class Error: int {
     SENDMSG = 12,
     DATA = 13,
     RUNNING = 14,
-    SIZE = 15
+    SIZE = 15,
+    EPERMISSION = 16,
 };
 
 static const char* ErrorToString(const Error error) {
@@ -60,6 +61,8 @@ static const char* ErrorToString(const Error error) {
             return "Maybe running on WideClient, but FS not running on server, or wrong FSUIPC";
         case Error::SIZE:
             return "Read or Write request cannot be added, memory for process is full";
+        case Error::EPERMISSION:  // Operation not permitted
+            return "Connection denied by the connecting party please run this application as admin";
     }
 
     return "";
@@ -78,7 +81,8 @@ enum class Simulator: int {
     ESP = 9,
     P3D = 10,
     FSX64 = 11,
-    P3D64 = 12
+    P3D64 = 12,
+    XP11 = 13
 };
 
 class IPCUser {
