@@ -37,8 +37,13 @@ export enum Simulator {
   ESP,
   P3D,
   FSX64,
-  P3D64
+  P3D64,
+  MSFS,
 }
+
+type FixedSizedNumberType = Type.Byte|Type.SByte|Type.Int16|Type.Int32|Type.UInt16|Type.UInt32|Type.Double|Type.Single;
+type FixedSizedStringType = Type.Int64|Type.UInt64;
+type VariableSizedType = Type.ByteArray|Type.String|Type.BitArray;
 
 export class FSUIPC {
   constructor();
@@ -47,13 +52,18 @@ export class FSUIPC {
   close(): Promise<FSUIPC>;
   process(): Promise<object>;
 
-  add(name: string, offset: number,
-      type: Type.Byte|Type.SByte|Type.Int16|Type.Int32|Type.Int64|
-      Type.UInt16|Type.UInt32|Type.UInt64|Type.Double|Type.Single): Offset;
-  add(name: string, offset: number,
-      type: Type.ByteArray|Type.String|Type.BitArray, length: number): Offset;
+  add(name: string, offset: number, type: FixedSizedNumberType | FixedSizedStringType): Offset;
+  add(name: string, offset: number, type: VariableSizedType, length: number): Offset;
 
   remove(name: string): Offset;
+
+  write(offset: number, type: FixedSizedNumberType, value: number): void;
+  write(offset: number, type: FixedSizedStringType, value: string): void;
+
+  // Experimental
+  write(offset: number, type: Type.String, length: number, value: string): void;
+  // Experimental
+  write(offset: number, type: Type.ByteArray, length: number, value: ArrayBufferView): void;
 }
 
 export enum ErrorCode {

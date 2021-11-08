@@ -1,12 +1,12 @@
 // fsuipc.cc
-#include <string>
+#include "FSUIPC.h"
 
 #include <nan.h>
 #include <node.h>
-
 #include <windows.h>
 
-#include "FSUIPC.h"
+#include <string>
+
 #include "IPCUser.h"
 
 namespace FSUIPC {
@@ -28,6 +28,8 @@ NAN_MODULE_INIT(FSUIPC::Init) {
 
   Nan::SetPrototypeMethod(ctor, "add", Add);
   Nan::SetPrototypeMethod(ctor, "remove", Remove);
+
+  Nan::SetPrototypeMethod(ctor, "write", Write);
 
   target->Set(Nan::GetCurrentContext(), Nan::New("FSUIPC").ToLocalChecked(),
               ctor->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
@@ -64,7 +66,8 @@ NAN_METHOD(FSUIPC::Open) {
               .ToLocalChecked());
     }
 
-    requestedSim = static_cast<Simulator>(info[0]->Uint32Value(Nan::GetCurrentContext()).ToChecked());
+    requestedSim = static_cast<Simulator>(
+        info[0]->Uint32Value(Nan::GetCurrentContext()).ToChecked());
   }
 
   auto worker = new OpenAsyncWorker(self, requestedSim);
@@ -148,7 +151,7 @@ NAN_METHOD(FSUIPC::Add) {
 
   if (size == 0) {
     return Nan::ThrowTypeError(
-        Nan::New("FSUIPC.Add: expected third argument to be a type")
+        Nan::New("FSUIPC.Add: expected fourth argument to be a size > 0")
             .ToLocalChecked());
   }
 
@@ -199,6 +202,236 @@ NAN_METHOD(FSUIPC::Remove) {
   info.GetReturnValue().Set(obj);
 }
 
+NAN_METHOD(FSUIPC::Write) {
+  FSUIPC* self = Nan::ObjectWrap::Unwrap<FSUIPC>(info.This());
+
+  if (info.Length() < 3) {
+    return Nan::ThrowError(
+        Nan::New("FSUIPC.Write: requires at least 3 arguments")
+            .ToLocalChecked());
+  }
+
+  if (!info[0]->IsUint32()) {
+    return Nan::ThrowTypeError(
+        Nan::New("FSUIPC.Write: expected first argument to be uint")
+            .ToLocalChecked());
+  }
+
+  if (!info[1]->IsInt32()) {
+    return Nan::ThrowTypeError(
+        Nan::New("FSUIPC.Write: expected second argument to be int")
+            .ToLocalChecked());
+  }
+
+  DWORD offset = info[0]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+  Type type = (Type)info[1]->Int32Value(Nan::GetCurrentContext()).ToChecked();
+
+  DWORD size;
+  void* value;
+
+  if (type == Type::ByteArray || type == Type::BitArray ||
+      type == Type::String) {
+    if (info.Length() < 4) {
+      return Nan::ThrowTypeError(
+          Nan::New("FSUIPC.Write: requires at least 4 arguments if type is "
+                   "byteArray, bitArray or string")
+              .ToLocalChecked());
+    }
+
+    if (!info[2]->IsUint32()) {
+      return Nan::ThrowTypeError(
+          Nan::New("FSUIPC.Write: expected third argument to be uint")
+              .ToLocalChecked());
+    }
+
+    size = (int)info[2]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+  } else {
+    size = get_size_of_type(type);
+  }
+
+  if (size == 0) {
+    return Nan::ThrowTypeError(
+        Nan::New("FSUIPC.Add: expected size to be > 0").ToLocalChecked());
+  }
+
+  value = malloc(size);
+
+  switch (type) {
+    case Type::Byte: {
+      uint8_t x =
+          (uint8_t)info[2]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::SByte: {
+      int8_t x =
+          (int8_t)info[2]->Int32Value(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::Int16: {
+      int16_t x =
+          (int16_t)info[2]->Int32Value(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::Int32: {
+      int32_t x = info[2]->Int32Value(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::UInt16: {
+      uint16_t x =
+          (uint16_t)info[2]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::UInt32: {
+      uint32_t x = info[2]->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::Double: {
+      double x = info[2]->NumberValue(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::Single: {
+      float x =
+          (float)info[2]->NumberValue(Nan::GetCurrentContext()).ToChecked();
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::Int64: {
+      int64_t x;
+
+      if (info[3]->IsString()) {
+        std::string x_str = std::string(*Nan::Utf8String(info[3]));
+        x = std::stoll(x_str);
+      } else if (info[3]->IsInt32()) {
+        x = (int64_t)info[3]->Int32Value(Nan::GetCurrentContext()).ToChecked();
+      } else {
+        return Nan::ThrowTypeError(
+            Nan::New("FSUIPC.Write: expected fourth argument to be a string or "
+                     "int when type is int64")
+                .ToLocalChecked());
+      }
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::UInt64: {
+      uint64_t x;
+
+      if (info[3]->IsString()) {
+        std::string x_str = std::string(*Nan::Utf8String(info[3]));
+        x = std::stoll(x_str);
+      } else if (info[3]->IsUint32()) {
+        x = (uint64_t)info[3]
+                ->Uint32Value(Nan::GetCurrentContext())
+                .ToChecked();
+      } else {
+        return Nan::ThrowTypeError(
+            Nan::New("FSUIPC.Write: expected fourth argument to be a string or "
+                     "int when type is uint64")
+                .ToLocalChecked());
+      }
+
+      std::copy(
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)),
+          static_cast<const uint8_t*>(static_cast<const void*>(&x)) + sizeof x,
+          static_cast<uint8_t*>(value));
+
+      break;
+    }
+    case Type::String: {
+      std::memset(value, 0, size);
+
+      std::string x_str = std::string(*Nan::Utf8String(info[3]));
+      if (x_str.length() >= size) {
+        return Nan::ThrowTypeError(
+            Nan::New("FSUIPC.Write: expected string's length to be less than "
+                     "the supplied size")
+                .ToLocalChecked());
+      }
+
+      const char* x_c_str = x_str.c_str();
+
+      strcpy_s((char*)value, size, x_str.c_str());
+
+      break;
+    }
+    case Type::ByteArray: {
+      std::memset(value, 0, size);
+
+      if (info[3]->IsArrayBuffer()) {
+        v8::Local<v8::ArrayBufferView> view =
+            v8::Local<v8::ArrayBufferView>::Cast(info[3]);
+
+        view->CopyContents(value, size);
+      } else {
+        return Nan::ThrowTypeError(
+            Nan::New("FSUIPC.Write: expected to receive ArrayBufferView for "
+                     "byte array type")
+                .ToLocalChecked());
+      }
+
+      break;
+    }
+    default: {
+      return Nan::ThrowTypeError(
+          Nan::New("FSUIPC.Write: unsupported type for write")
+              .ToLocalChecked());
+    }
+  }
+
+  self->offset_writes.push_back(OffsetWrite{type, offset, size, value});
+}
+
 void ProcessAsyncWorker::Execute() {
   Error result;
 
@@ -210,12 +443,30 @@ void ProcessAsyncWorker::Execute() {
   std::map<std::string, Offset>::iterator it = offsets.begin();
 
   for (; it != offsets.end(); ++it) {
-    if (!this->fsuipc->ipc->Read(it->second.offset, it->second.size, it->second.dest, &result)) {
+    if (!this->fsuipc->ipc->Read(it->second.offset, it->second.size,
+                                 it->second.dest, &result)) {
       this->SetErrorMessage(ErrorToString(result));
       this->errorCode = static_cast<int>(result);
       return;
     }
   }
+
+  auto offset_writes = this->fsuipc->offset_writes;
+
+  std::vector<OffsetWrite>::iterator write_it = offset_writes.begin();
+
+  for (; write_it != offset_writes.end(); ++write_it) {
+    if (!this->fsuipc->ipc->Write(write_it->offset, write_it->size,
+                                  write_it->src, &result)) {
+      this->SetErrorMessage(ErrorToString(result));
+      this->errorCode = static_cast<int>(result);
+      return;
+    }
+
+    free(write_it->src);
+  }
+
+  this->fsuipc->offset_writes.clear();
 
   if (!this->fsuipc->ipc->Process(&result)) {
     this->SetErrorMessage(ErrorToString(result));
@@ -437,7 +688,8 @@ NAN_MODULE_INIT(InitError) {
   Nan::DefineOwnProperty(obj, Nan::New("NOFS").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::NOFS)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("REGMSG").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::REGMSG)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::REGMSG)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("ATOM").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::ATOM)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("MAP").ToLocalChecked(),
@@ -445,21 +697,28 @@ NAN_MODULE_INIT(InitError) {
   Nan::DefineOwnProperty(obj, Nan::New("VIEW").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::VIEW)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("VERSION").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::VERSION)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::VERSION)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("WRONGFS").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::WRONGFS)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::WRONGFS)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("NOTOPEN").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::NOTOPEN)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::NOTOPEN)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("NODATA").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::NODATA)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::NODATA)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("TIMEOUT").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::TIMEOUT)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::TIMEOUT)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("SENDMSG").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::SENDMSG)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::SENDMSG)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("DATA").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::DATA)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("RUNNING").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Error::RUNNING)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Error::RUNNING)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("SIZE").ToLocalChecked(),
                          Nan::New(static_cast<int>(Error::SIZE)), v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("EPERMISSION").ToLocalChecked(),
@@ -472,31 +731,47 @@ NAN_MODULE_INIT(InitError) {
 NAN_MODULE_INIT(InitSimulator) {
   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
   Nan::DefineOwnProperty(obj, Nan::New("ANY").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::ANY)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::ANY)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS98").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FS98)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS98)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS2K").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FS2K)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS2K)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("CFS2").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::CFS2)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::CFS2)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("CFS1").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::CFS1)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::CFS1)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FLY").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FLY)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FLY)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS2K2").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FS2K2)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS2K2)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FS2K4").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FS2K4)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FS2K4)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FSX").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FSX)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FSX)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("ESP").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::ESP)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::ESP)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("P3D").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::P3D)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::P3D)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("FSX64").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::FSX64)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::FSX64)),
+                         v8::ReadOnly);
   Nan::DefineOwnProperty(obj, Nan::New("P3D64").ToLocalChecked(),
-                         Nan::New(static_cast<int>(Simulator::P3D64)), v8::ReadOnly);
+                         Nan::New(static_cast<int>(Simulator::P3D64)),
+                         v8::ReadOnly);
+  Nan::DefineOwnProperty(obj, Nan::New("MSFS").ToLocalChecked(),
+                         Nan::New(static_cast<int>(Simulator::MSFS)),
+                         v8::ReadOnly);
 
   target->Set(Nan::GetCurrentContext(), Nan::New("Simulator").ToLocalChecked(),
               obj);

@@ -46,6 +46,11 @@ obj.open()
 
 ## Release History
 
+* 0.4.1:
+    * Limit number of published files
+* 0.4.0:
+    * Add support for requesting a connection to MSFS
+    * Add support for writes
 * 0.3.0
     * Add support for Node 12.0, drop support for Node < 11.0
 * 0.2.0
