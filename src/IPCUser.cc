@@ -221,7 +221,7 @@ namespace FSUIPC {
 
         if (i >= 10) { // Failed all tries?
        /*
-       * DWORD error 5 means that we dont have permission to comunicate with the FS6 window
+       * DWORD error 5 means that we dont have permission to comunicate with any window
        * For more information, see: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
        */
            *result = GetLastError() == 0 ? Error::TIMEOUT : GetLastError() == 5 ? Error::EPERMISSION :Error::SENDMSG;
