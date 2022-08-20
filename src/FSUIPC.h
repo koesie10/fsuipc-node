@@ -1,7 +1,9 @@
 #ifndef FSUIPC_H
 #define FSUIPC_H
 
-#include <nan.h>
+// Disable winsock.h
+#include <napi.h>
+#include <winsock2.h>
 
 #include <map>
 #include <mutex>
@@ -9,7 +11,6 @@
 #include <vector>
 
 #include "IPCUser.h"
-#include "helpers.h"
 
 namespace FSUIPC {
 enum class Type {
@@ -28,9 +29,9 @@ enum class Type {
   BitArray,
 };
 
-NAN_MODULE_INIT(InitType);
-NAN_MODULE_INIT(InitError);
-NAN_MODULE_INIT(InitSimulator);
+void InitType(Napi::Env env, Napi::Object exports);
+void InitError(Napi::Env env, Napi::Object exports);
+void InitSimulator(Napi::Env env, Napi::Object exports);
 
 DWORD get_size_of_type(Type type);
 
@@ -50,24 +51,24 @@ struct OffsetWrite {
 };
 
 // https://medium.com/netscape/tutorial-building-native-c-modules-for-node-js-using-nan-part-1-755b07389c7c
-class FSUIPC : public Nan::ObjectWrap {
+class FSUIPC : public Napi::ObjectWrap<FSUIPC> {
   friend class ProcessAsyncWorker;
   friend class OpenAsyncWorker;
   friend class CloseAsyncWorker;
 
  public:
-  static NAN_MODULE_INIT(Init);
+  static void Init(Napi::Env env, Napi::Object exports);
 
-  static NAN_METHOD(New);
-  static NAN_METHOD(Open);
-  static NAN_METHOD(Close);
+  FSUIPC(const Napi::CallbackInfo& info);
+  Napi::Value Open(const Napi::CallbackInfo& info);
+  Napi::Value Close(const Napi::CallbackInfo& info);
 
-  static NAN_METHOD(Process);
-  static NAN_METHOD(Add);
-  static NAN_METHOD(Remove);
-  static NAN_METHOD(Write);
+  Napi::Value Process(const Napi::CallbackInfo& info);
+  Napi::Value Add(const Napi::CallbackInfo& info);
+  Napi::Value Remove(const Napi::CallbackInfo& info);
+  void Write(const Napi::CallbackInfo& info);
 
-  static Nan::Persistent<v8::FunctionTemplate> constructor;
+  static Napi::FunctionReference constructor;
 
   ~FSUIPC() {
     if (this->ipc) {
@@ -83,53 +84,66 @@ class FSUIPC : public Nan::ObjectWrap {
   IPCUser* ipc;
 };
 
-class ProcessAsyncWorker : public PromiseWorker {
+class ProcessAsyncWorker : public Napi::AsyncWorker {
  public:
   FSUIPC* fsuipc;
 
-  ProcessAsyncWorker(FSUIPC* fsuipc) : PromiseWorker() {
-    this->fsuipc = fsuipc;
-  }
+  ProcessAsyncWorker(Napi::Env& env,
+                     Napi::Promise::Deferred deferred,
+                     FSUIPC* fsuipc)
+      : Napi::AsyncWorker(env), deferred(deferred), fsuipc(fsuipc) {}
 
-  void Execute();
+  void Execute() override;
 
-  void HandleOKCallback();
-  void HandleErrorCallback();
+  void OnOK() override;
+  void OnError(const Napi::Error& e) override;
 
-  v8::Local<v8::Value> GetValue(Type type, void* data, size_t length);
+  Napi::Value GetValue(Type type, void* data, size_t length);
 
  private:
   int errorCode;
+  Napi::Promise::Deferred deferred;
 };
 
-class OpenAsyncWorker : public PromiseWorker {
+class OpenAsyncWorker : public Napi::AsyncWorker {
  public:
   FSUIPC* fsuipc;
 
-  OpenAsyncWorker(FSUIPC* fsuipc, Simulator requestedSim) : PromiseWorker() {
-    this->fsuipc = fsuipc;
-    this->requestedSim = requestedSim;
-  }
+  OpenAsyncWorker(Napi::Env& env,
+                  Napi::Promise::Deferred deferred,
+                  FSUIPC* fsuipc,
+                  Simulator requestedSim)
+      : Napi::AsyncWorker(env),
+        deferred(deferred),
+        fsuipc(fsuipc),
+        requestedSim(requestedSim) {}
 
-  void Execute();
+  void Execute() override;
 
-  void HandleOKCallback();
-  void HandleErrorCallback();
+  void OnOK() override;
+  void OnError(const Napi::Error& e) override;
 
  private:
   Simulator requestedSim;
   int errorCode;
+  Napi::Promise::Deferred deferred;
 };
 
-class CloseAsyncWorker : public PromiseWorker {
+class CloseAsyncWorker : public Napi::AsyncWorker {
  public:
   FSUIPC* fsuipc;
 
-  CloseAsyncWorker(FSUIPC* fsuipc) : PromiseWorker() { this->fsuipc = fsuipc; }
+  CloseAsyncWorker(Napi::Env& env,
+                   Napi::Promise::Deferred deferred,
+                   FSUIPC* fsuipc)
+      : Napi::AsyncWorker(env), deferred(deferred), fsuipc(fsuipc) {}
 
-  void Execute();
+  void Execute() override;
 
-  void HandleOKCallback();
+  void OnOK() override;
+
+ private:
+  Napi::Promise::Deferred deferred;
 };
 
 }  // namespace FSUIPC
