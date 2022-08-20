@@ -673,7 +673,9 @@ void InitError(Napi::Env env, Napi::Object exports) {
       "RUNNING", Napi::Value::From(env, static_cast<int>(Error::RUNNING))));
   obj.DefineProperty(Napi::PropertyDescriptor::Value(
       "SIZE", Napi::Value::From(env, static_cast<int>(Error::SIZE))));
-  ;
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "NOPERMISSION",
+      Napi::Value::From(env, static_cast<int>(Error::NOPERMISSION))));
 
   exports.Set("ErrorCode", obj);
 }

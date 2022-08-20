@@ -24,7 +24,8 @@ enum class Error : int {
   SENDMSG = 12,
   DATA = 13,
   RUNNING = 14,
-  SIZE = 15
+  SIZE = 15,
+  NOPERMISSION = 16  // Operation not permitted DWORD error code 0x5
 };
 
 static const char* ErrorToString(const Error error) {
@@ -63,6 +64,9 @@ static const char* ErrorToString(const Error error) {
     case Error::SIZE:
       return "Read or Write request cannot be added, memory for process is "
              "full";
+    case Error::NOPERMISSION:  // Operation not permitted
+      return "Connection denied by the connecting party: please run this "
+             "application as admin";
   }
 
   return "";
@@ -82,7 +86,7 @@ enum class Simulator : int {
   P3D = 10,
   FSX64 = 11,
   P3D64 = 12,
-  MSFS = 13
+  MSFS = 13,
 };
 
 class IPCUser {

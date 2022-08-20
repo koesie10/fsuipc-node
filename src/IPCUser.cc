@@ -118,7 +118,7 @@ bool IPCUser::Open(Simulator requestedVersion, Error* result) {
       return false;
     }
 
-    // Read FS vesrion and validity check pattern
+    // Read FS version and validity check pattern
     if (!this->Read(0x3308, 4, &this->FSVersion, result)) {
       this->Close();
       return false;
@@ -209,7 +209,6 @@ bool IPCUser::Process(Error* result) {
   this->nextPointer = this->viewPointer;
 
   // Send the request with 9 retries
-
   while (++i < 10 &&
          !SendMessageTimeout(
              this->windowHandle,  // FS6 window handle
@@ -224,7 +223,19 @@ bool IPCUser::Process(Error* result) {
   }
 
   if (i >= 10) {  // Failed all tries?
-    *result = GetLastError() == 0 ? Error::TIMEOUT : Error::SENDMSG;
+    DWORD lastError = GetLastError();
+    if (lastError == 0) {
+      *result = Error::TIMEOUT;
+    } else if (lastError == 5) {
+      /*
+       * Error code 5 means that we don't have permission to communicate with
+       * any window For more information, see:
+       * https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+       */
+      *result = Error::NOPERMISSION;
+    } else {
+      *result = Error::SENDMSG;
+    }
     this->destinations.clear();
     return false;
   }
