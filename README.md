@@ -46,6 +46,8 @@ obj.open()
 
 ## Release History
 
+This is only provided for historical reasons, for the newest releases see [GitHub releases](https://github.com/koesie10/fsuipc-node/releases).
+
 * 0.4.1:
     * Limit number of published files
 * 0.4.0:
