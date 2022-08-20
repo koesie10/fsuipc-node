@@ -25,7 +25,7 @@ enum class Error : int {
   DATA = 13,
   RUNNING = 14,
   SIZE = 15,
-  EPERMISSION = 16 // Operation not permitted DWORD error code 0x5
+  NOPERMISSION = 16  // Operation not permitted DWORD error code 0x5
 };
 
 static const char* ErrorToString(const Error error) {
@@ -64,8 +64,9 @@ static const char* ErrorToString(const Error error) {
     case Error::SIZE:
       return "Read or Write request cannot be added, memory for process is "
              "full";
-    case Error::EPERMISSION:  // Operation not permitted
-      return "Connection denied by the connecting party please run this application as admin";
+    case Error::NOPERMISSION:  // Operation not permitted
+      return "Connection denied by the connecting party: please run this "
+             "application as admin";
   }
 
   return "";

@@ -1,6 +1,6 @@
 #include "IPCUser.h"
 
-#define MSGNAME  "FsasmLib:IPC"
+#define MSGNAME "FsasmLib:IPC"
 
 #define MAX_SIZE \
   0x7F00  // Largest data (kept below 32k to avoid any possible 16-bit sign
@@ -133,7 +133,6 @@ bool IPCUser::Open(Simulator requestedVersion, Error* result) {
     }
 
     // Actually send the requests and get the responses
-    // process implementation does return a close res (XP11)
     if (!this->Process(result)) {
       this->Close();
       return false;
@@ -193,8 +192,6 @@ bool IPCUser::Process(Error* result) {
   F64IPC_READSTATEDATA_HDR* readHeader;
   FS6IPC_WRITESTATEDATA_HDR* writeHeader;
   int i = 0;
-  LRESULT messageSuccess;
-
 
   if (!this->viewPointer) {
     *result = Error::NOTOPEN;
@@ -226,11 +223,19 @@ bool IPCUser::Process(Error* result) {
   }
 
   if (i >= 10) {  // Failed all tries?
-  /*
-    * DWORD error 5 means that we dont have permission to comunicate with any window
-    * For more information, see: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
-   */
-    *result = GetLastError() == 0 ? Error::TIMEOUT : GetLastError() == 5 ? Error::EPERMISSION :Error::SENDMSG;
+    DWORD lastError = GetLastError();
+    if (lastError == 0) {
+      *result = Error::TIMEOUT;
+    } else if (lastError == 5) {
+      /*
+       * Error code 5 means that we don't have permission to communicate with
+       * any window For more information, see:
+       * https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+       */
+      *result = Error::NOPERMISSION;
+    } else {
+      *result = Error::SENDMSG;
+    }
     this->destinations.clear();
     return false;
   }
