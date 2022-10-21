@@ -34,6 +34,8 @@ class FSUIPCWASM : public Napi::ObjectWrap<FSUIPCWASM> {
   Napi::Value SetLvarUpdateCallback(const Napi::CallbackInfo& info);
   Napi::Value FlagLvarForUpdate(const Napi::CallbackInfo& info);
 
+  Napi::Value SetLvar(const Napi::CallbackInfo& info);
+
   static Napi::FunctionReference constructor;
 
   ~FSUIPCWASM() {

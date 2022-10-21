@@ -43,6 +43,8 @@ void FSUIPCWASM::Init(Napi::Env env, Napi::Object exports) {
 
                       InstanceMethod<&FSUIPCWASM::SetLvarUpdateCallback>("setLvarUpdateCallback"),
                       InstanceMethod<&FSUIPCWASM::FlagLvarForUpdate>("flagLvarForUpdate"),
+
+                      InstanceMethod<&FSUIPCWASM::SetLvar>("setLvar"),
                   });
 
   Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -196,6 +198,36 @@ Napi::Value FSUIPCWASM::FlagLvarForUpdate(const Napi::CallbackInfo& info) {
   std::lock_guard<std::mutex> guard(this->wasmif_mutex);  
 
   this->wasmif->flagLvarForUpdateCallback(lvar_name.c_str());
+
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+
+  deferred.Resolve(this->Value());
+
+  return deferred.Promise();
+}
+
+Napi::Value FSUIPCWASM::SetLvar(const Napi::CallbackInfo& info) {
+  Napi::Env env = Env();
+  Napi::HandleScope scope(env);
+
+  if (info.Length() != 2) {
+    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvar: expected 2 arguments");
+  }
+
+  if (!info[0].IsString()) {
+    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvar: expected first argument to be a string");
+  }
+
+  if (!info[1].IsNumber()) {
+    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvar: expected second argument to be a number");
+  }
+
+  std::string lvar_name = info[0].As<Napi::String>().Utf8Value();
+  double value = info[1].As<Napi::Number>().DoubleValue();
+
+  std::lock_guard<std::mutex> guard(this->wasmif_mutex);  
+
+  this->wasmif->setLvar(lvar_name.c_str(), value);
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
 
