@@ -9,6 +9,7 @@
             },
             "sources": [
                 "src/index.cc",
+                "src/FSUIPCWASM.cc",
                 "third_party/FSUIPC_WAPI/CDAIdBank.cpp",
                 "third_party/FSUIPC_WAPI/ClientDataArea.cpp",
                 "third_party/FSUIPC_WAPI/Logger.cpp",
@@ -16,6 +17,7 @@
             ],
             "include_dirs" : [
                 "src",
+                "third_party",
                 "<!(node -p \"require('node-addon-api').include_dir\")",
                 "<(msfs_sdk)/SimConnect SDK/include"
             ],

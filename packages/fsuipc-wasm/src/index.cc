@@ -3,9 +3,13 @@
 #include <napi.h>
 #include <uv.h>
 
+#include "FSUIPCWASM.h"
+
 namespace FSUIPCWASM {
 
 Napi::Object InitModule(Napi::Env env, Napi::Object exports) {
+  FSUIPCWASM::Init(env, exports);
+  InitError(env, exports);
   return exports;
 }
 
