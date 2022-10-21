@@ -1,11 +1,9 @@
 {
-  "name": "fsuipc",
-  "version": "0.5.0",
-  "description": "Node bindings for FSUIPC",
+  "name": "fsuipc-wasm",
+  "version": "0.0.0",
+  "description": "Node bindings for the FSUIPC WASM interface",
   "keywords": [
     "fsuipc",
-    "fsx",
-    "p3d",
     "msfs"
   ],
   "repository": {
