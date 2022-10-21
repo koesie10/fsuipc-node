@@ -20,6 +20,8 @@ void FSUIPCWASM::Init(Napi::Env env, Napi::Object exports) {
                   {
                       InstanceMethod<&FSUIPCWASM::Start>("start"),
                       InstanceMethod<&FSUIPCWASM::Close>("close"),
+
+                      InstanceAccessor<&FSUIPCWASM::GetLvarValues, nullptr>("lvarValues"),
                   });
 
   Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -74,6 +76,8 @@ Napi::Value FSUIPCWASM::Start(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value FSUIPCWASM::Close(const Napi::CallbackInfo& info) {
+  std::lock_guard<std::mutex> guard(this->wasmif_mutex);
+
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
 
   this->wasmif->end();
@@ -81,6 +85,22 @@ Napi::Value FSUIPCWASM::Close(const Napi::CallbackInfo& info) {
   deferred.Resolve(this->Value());
 
   return deferred.Promise();
+}
+
+Napi::Value FSUIPCWASM::GetLvarValues(const Napi::CallbackInfo& info) {
+  std::lock_guard<std::mutex> guard(this->wasmif_mutex);
+
+  Napi::Env env = info.Env();
+
+  map<string, double> lvarValues;
+
+  this->wasmif->getLvarValues(lvarValues);
+
+  Napi::Object lvarValuesObject = Napi::Object::New(env);
+  for (auto const& [key, val] : lvarValues) {
+    lvarValuesObject.Set(key, val);
+  }
+  return lvarValuesObject;
 }
 
 void StartAsyncWorker::Execute() {

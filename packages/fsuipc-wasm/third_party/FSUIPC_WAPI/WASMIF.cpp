@@ -40,6 +40,18 @@ WASMIF::WASMIF() {
 	InitializeCriticalSection(&hvarNamesMutex);
 	InitializeCriticalSection(&configMutex);
 	simConnection = SIMCONNECT_OPEN_CONFIGINDEX_LOCAL; // = -1
+
+	// We need to set these to nullptr to start with, otherwise the check
+	// for e.g. value_cda[0] will be truthy with uninitialized memory
+	for (int i = 0; i < MAX_NO_LVAR_CDAS; i++) {
+		lvar_cdas[i] = nullptr;
+	}
+	for (int i = 0; i < MAX_NO_VALUE_CDAS; i++) {
+		value_cda[i] = nullptr;
+	}
+	for (int i = 0; i < MAX_NO_HVAR_CDAS; i++) {
+		hvar_cdas[i] = nullptr;
+	}
 }
 
 WASMIF::~WASMIF() {}

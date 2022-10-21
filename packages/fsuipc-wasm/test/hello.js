@@ -4,19 +4,22 @@ const obj = new fsuipcWasm.FSUIPCWASM({
   debug: true,
 });
 
-obj.start()
-    .then((obj) => {
-      console.log('started');
-      return obj;
-    })
-    .then((obj) => {
-      return obj.close();
-    })
-    .catch((err) => {
-      console.error(err);
+const sleep = (ms) => new Promise((resolve) => {
+  setTimeout(resolve, ms);
+});
 
-      return obj.close();
-    })
-    .then((obj) => {
-      console.log('closed');
-    });
+async function test() {
+  await obj.start();
+
+  console.log('Started');
+
+  await sleep(100);
+
+  console.log(obj.lvarValues);
+
+  await obj.close();
+
+  console.log('closed');
+}
+
+test().catch(e => console.error(e));

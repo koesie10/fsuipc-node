@@ -10,6 +10,8 @@ export class FSUIPCWASM {
 
   start(): Promise<FSUIPCWASM>;
   close(): Promise<FSUIPCWASM>;
+
+  get lvarValues(): Record<string, number>;
 }
 
 export class FSUIPCWASMError extends Error {
