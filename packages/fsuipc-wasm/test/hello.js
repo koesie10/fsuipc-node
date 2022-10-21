@@ -1,7 +1,7 @@
 const fsuipcWasm = require('..');
 
 const obj = new fsuipcWasm.FSUIPCWASM({
-  logLevel: fsuipcWasm.LogLevel.Enable,
+  // logLevel: fsuipcWasm.LogLevel.Enable,
 });
 
 async function test() {
@@ -11,9 +11,13 @@ async function test() {
 
   console.log(obj.lvarValues);
 
-  await obj.close();
+  obj.flagLvarForUpdate("A32NX_IS_STATIONARY");
 
-  console.log('closed');
+  obj.setLvarUpdateCallback((newLvars) => {
+    console.log(newLvars);
+  });
+
+  // await obj.close();
 }
 
 test().catch(e => console.error(e));

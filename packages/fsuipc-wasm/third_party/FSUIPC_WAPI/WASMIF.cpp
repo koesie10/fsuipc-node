@@ -1222,10 +1222,10 @@ bool WASMIF::createLvar(const char* lvarName, double value) {
 void  WASMIF::registerUpdateCallback(std::function<void()> callbackFunction) {
 	cdaCbFunction = callbackFunction;
 }
-void  WASMIF::registerLvarUpdateCallback(void (*callbackFunction)(int id[], double newValue[])) {
+void  WASMIF::registerLvarUpdateCallback(std::function<void(int id[], double newValue[])> callbackFunction) {
 	lvarCbFunctionId = callbackFunction;
 }
-void  WASMIF::registerLvarUpdateCallback(void (*callbackFunction)(const char* lvarName[], double newValue[])) {
+void  WASMIF::registerLvarUpdateCallback(std::function<void(const char* lvarName[], double newValue[])> callbackFunction) {
 	lvarCbFunctionName = callbackFunction;
 }
 void  WASMIF::flagLvarForUpdateCallback(int lvarId) {

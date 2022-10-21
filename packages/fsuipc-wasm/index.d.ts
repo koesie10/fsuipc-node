@@ -21,6 +21,9 @@ export class FSUIPCWASM {
   close(): Promise<FSUIPCWASM>;
 
   get lvarValues(): Record<string, number>;
+
+  setLvarUpdateCallback(callback: (updatedLvars: Record<string, number>) => void): Promise<void>;
+  flagLvarForUpdate(lvarName: string): Promise<void>;
 }
 
 export class FSUIPCWASMError extends Error {

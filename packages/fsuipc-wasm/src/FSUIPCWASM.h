@@ -18,6 +18,8 @@ namespace FSUIPCWASM {
 void InitError(Napi::Env env, Napi::Object exports);
 void InitLogLevel(Napi::Env env, Napi::Object exports);
 
+void ConvertLVarUpdateCallbackData(Napi::Env env, Napi::Function callback, nullptr_t *context, std::map<string, double> *data);
+
 class FSUIPCWASM : public Napi::ObjectWrap<FSUIPCWASM> {
   friend class StartAsyncWorker;
 
@@ -29,12 +31,18 @@ class FSUIPCWASM : public Napi::ObjectWrap<FSUIPCWASM> {
   Napi::Value Close(const Napi::CallbackInfo& info);
 
   Napi::Value GetLvarValues(const Napi::CallbackInfo& info);
+  Napi::Value SetLvarUpdateCallback(const Napi::CallbackInfo& info);
+  Napi::Value FlagLvarForUpdate(const Napi::CallbackInfo& info);
 
   static Napi::FunctionReference constructor;
 
   ~FSUIPCWASM() {
     if (this->wasmif) {
       this->wasmif->end();
+    }
+
+    if (this->lvar_update_callback) {
+      this->lvar_update_callback.Release();
     }
   }
 
@@ -46,6 +54,9 @@ class FSUIPCWASM : public Napi::ObjectWrap<FSUIPCWASM> {
   std::condition_variable start_cv;
 
   void updateCallback();
+  void lvarUpdateCallback(const char* lvarName[], double newValue[]);
+
+  Napi::TypedThreadSafeFunction<nullptr_t, std::map<string, double>, ConvertLVarUpdateCallbackData> lvar_update_callback;
 };
 
 class StartAsyncWorker : public Napi::AsyncWorker {
