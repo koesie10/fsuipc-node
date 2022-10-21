@@ -33,7 +33,7 @@ void FSUIPCWASM::Init(Napi::Env env, Napi::Object exports) {
 }
 
 FSUIPCWASM::FSUIPCWASM(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<FSUIPCWASM>(info) {
+    : Napi::ObjectWrap<FSUIPCWASM>(info), started(false) {
   Napi::Env env = info.Env();
 
   // throw an error if constructor is called without new keyword
@@ -42,7 +42,7 @@ FSUIPCWASM::FSUIPCWASM(const Napi::CallbackInfo& info)
                            "FSUIPCWASM.new - called without new keyword");
   }
 
-  bool debug = false;
+  LOGLEVEL log_level = DISABLE_LOG;
 
   if (info.Length() > 0) {
     if (!info[0].IsObject()) {
@@ -51,17 +51,23 @@ FSUIPCWASM::FSUIPCWASM(const Napi::CallbackInfo& info)
     }
 
     auto options = info[0].As<Napi::Object>();
-    Napi::Value debug_value = options["debug"];
-    if (debug_value.ToBoolean().Value()) {
-      debug = true;
-    }
+    Napi::Value log_level_value = options["logLevel"];
+    log_level = (LOGLEVEL)log_level_value.ToNumber().Int32Value();
   }
 
-  if (debug) {
-    this->wasmif = WASMIF::GetInstance(&DebugLog);
-  } else {
-    this->wasmif = WASMIF::GetInstance();
+  this->wasmif = WASMIF::GetInstance(&DebugLog);
+
+  // this->wasmif->setLogLevel(log_level);
+  this->wasmif->registerUpdateCallback(std::bind(&FSUIPCWASM::updateCallback, this));
+}
+
+void FSUIPCWASM::updateCallback() {
+  {
+    std::lock_guard<std::mutex> guard(this->wasmif_mutex);
+    this->started = true;
   }
+
+  this->start_cv.notify_all();
 }
 
 Napi::Value FSUIPCWASM::Start(const Napi::CallbackInfo& info) {
@@ -104,29 +110,54 @@ Napi::Value FSUIPCWASM::GetLvarValues(const Napi::CallbackInfo& info) {
 }
 
 void StartAsyncWorker::Execute() {
-  std::lock_guard<std::mutex> guard(this->fsuipcWasm->wasmif_mutex);
+  {
+    std::lock_guard<std::mutex> guard(this->fsuipcWasm->wasmif_mutex);
 
-  if (!this->fsuipcWasm->wasmif->start()) {
-    this->SetError("Failed to start WASMIF");
-    return;
+    if (!this->fsuipcWasm->wasmif->start()) {
+      this->SetError("Failed to start WASMIF");
+      return;
+    }
   }
+
+  std::unique_lock lock(this->fsuipcWasm->wasmif_mutex);
+  this->fsuipcWasm->start_cv.wait(lock, [this]{return this->fsuipcWasm->started;});
+
+  lock.unlock();
 }
 
 void StartAsyncWorker::OnOK() {
-  Napi::Env env = this->Env();
+  Napi::Env env = Env();
   Napi::HandleScope scope(env);
 
-  this->deferred.Resolve(this->fsuipcWasm->Value());
+  deferred.Resolve(this->fsuipcWasm->Value());
 }
 
 void StartAsyncWorker::OnError(const Napi::Error& e) {
   Napi::Env env = this->Env();
   Napi::HandleScope scope(env);
 
-  napi_value args[2] = {Napi::String::New(env, e.Message())};
+  napi_value args[1] = {Napi::String::New(env, e.Message())};
   Napi::Value error = FSUIPCWASMError.Value().As<Napi::Function>().New(1, args);
 
   this->deferred.Reject(error);
+}
+
+void InitLogLevel(Napi::Env env, Napi::Object exports) {
+  Napi::Object obj = Napi::Object::New(env);
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "Disable", Napi::Number::New(env, (int)DISABLE_LOG)));
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "Info", Napi::Number::New(env, (int)LOG_LEVEL_INFO)));
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "Buffer", Napi::Number::New(env, (int)LOG_LEVEL_BUFFER)));
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "Debug", Napi::Number::New(env, (int)LOG_LEVEL_DEBUG)));
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "Trace", Napi::Number::New(env, (int)LOG_LEVEL_TRACE)));
+  obj.DefineProperty(Napi::PropertyDescriptor::Value(
+      "Enable", Napi::Number::New(env, (int)ENABLE_LOG)));
+
+  exports.Set(Napi::String::New(env, "LogLevel"), obj);
 }
 
 void InitError(Napi::Env env, Napi::Object exports) {

@@ -1219,7 +1219,7 @@ bool WASMIF::createLvar(const char* lvarName, double value) {
 	return TRUE;
 }
 
-void  WASMIF::registerUpdateCallback(void (*callbackFunction)(void)) {
+void  WASMIF::registerUpdateCallback(std::function<void()> callbackFunction) {
 	cdaCbFunction = callbackFunction;
 }
 void  WASMIF::registerLvarUpdateCallback(void (*callbackFunction)(int id[], double newValue[])) {

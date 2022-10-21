@@ -1,6 +1,7 @@
 #pragma once
 #include <windows.h>
 #include <stdio.h>
+#include <functional>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -65,7 +66,7 @@ class WASMIF
 		int getHvarIdFromName(const char* hvarName); // Utility function to get the id of a hvar. Hvar name must be preceded by 'H:'. -1 retuned if hvar not found
 		void getHvarNameFromId(int id, char* name); // Gets the name of a hvar from an id. The name MUST be allocated to hold a minimum of MAX_VAR_NAME_SIZE (56) bytes
 		bool createLvar(const char* lvarName, double value); // Creates an lvar and sets its initial value. The lvar name should NOT be preceded by 'L:'
-		void registerUpdateCallback(void (*callbackFunction)(void)); // Register for a callback function that is called once all lvar / hvar CDAs have been loaded and are available
+		void registerUpdateCallback(std::function<void()> callbackFunction); // Register for a callback function that is called once all lvar / hvar CDAs have been loaded and are available
 		void registerLvarUpdateCallback(void (*callbackFunction)(int id[], double newValue[])); // Register for a callback to be received when lvar values changed. Note that only lvars flagged for this callback will be retuned. A terminating elements of -1 and -1.0 are added to each array returned. Recommened to be used in your UpdateCallback
 		void registerLvarUpdateCallback(void (*callbackFunction)(const char* lvarName[], double newValue[])); // As above bit returns the lvar the lvar name instead of the id, with the terminating element being NULL. Recommened to be used in your UpdateCallback
 		void flagLvarForUpdateCallback(int lvarId); // Flags an lvar to be included in the lvarUpdateCallback, by ID. Recommened to be used in your UpdateCallback
@@ -110,7 +111,8 @@ class WASMIF
 		CDAIdBank* cdaIdBank;
 		int simConnection;
 		CRITICAL_SECTION lvarValuesMutex, lvarNamesMutex, hvarNamesMutex, configMutex;
-		void (*cdaCbFunction)(void) = NULL;
+		// void (*cdaCbFunction)(void) = NULL;
+		std::function<void()> cdaCbFunction = nullptr;
 		void (*lvarCbFunctionId)(int id[], double newValue[]) = NULL;
 		void (*lvarCbFunctionName)(const char* lvarName[], double newValue[]) = NULL;
 };

@@ -4,6 +4,8 @@
 #include <napi.h>
 #include <winsock2.h>
 
+#include <iostream>
+
 #include <map>
 #include <mutex>
 #include <string>
@@ -14,6 +16,7 @@
 namespace FSUIPCWASM {
 
 void InitError(Napi::Env env, Napi::Object exports);
+void InitLogLevel(Napi::Env env, Napi::Object exports);
 
 class FSUIPCWASM : public Napi::ObjectWrap<FSUIPCWASM> {
   friend class StartAsyncWorker;
@@ -38,6 +41,11 @@ class FSUIPCWASM : public Napi::ObjectWrap<FSUIPCWASM> {
  protected:
   std::mutex wasmif_mutex;
   WASMIF* wasmif;
+
+  bool started;
+  std::condition_variable start_cv;
+
+  void updateCallback();
 };
 
 class StartAsyncWorker : public Napi::AsyncWorker {

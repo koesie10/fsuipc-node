@@ -10,6 +10,7 @@ namespace FSUIPCWASM {
 Napi::Object InitModule(Napi::Env env, Napi::Object exports) {
   FSUIPCWASM::Init(env, exports);
   InitError(env, exports);
+  InitLogLevel(env, exports);
   return exports;
 }
 
