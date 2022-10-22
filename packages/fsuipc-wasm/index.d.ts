@@ -25,7 +25,7 @@ export class FSUIPCWASM {
   setLvarUpdateCallback(callback: (updatedLvars: Record<string, number>) => void): Promise<FSUIPCWASM>;
   flagLvarForUpdate(lvarName: string): Promise<FSUIPCWASM>;
 
-  setLvar(lvarName: string, value: double): Promise<FSUIPCWASM>;
+  setLvar(lvarName: string, value: number): Promise<FSUIPCWASM>;
 }
 
 export class FSUIPCWASMError extends Error {
