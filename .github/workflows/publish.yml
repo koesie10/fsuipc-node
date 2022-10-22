@@ -37,11 +37,6 @@ jobs:
         run: yarn lerna bootstrap
       - name: Version and publish
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor}}@users.noreply.github.com"
-
-          yarn lerna version ${{ github.ref_name }} --no-git-tag-version --no-push --yes
-
           yarn lerna publish from-git --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
