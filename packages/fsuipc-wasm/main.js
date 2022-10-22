@@ -1,3 +1,3 @@
-const fsuipcWasm = require('bindings')('fsuipcwasm.node');
+const fsuipcWasm = require('node-gyp-build')(__dirname);
 
 module.exports = fsuipcWasm;

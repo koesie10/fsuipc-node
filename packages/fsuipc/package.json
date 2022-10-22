@@ -20,16 +20,19 @@
     "binding.gyp",
     "index.d.ts",
     "main.js",
-    "README.md"
+    "README.md",
+    "prebuilds"
   ],
   "scripts": {
     "build": "node-gyp build",
-    "install": "node-gyp rebuild",
-    "configure": "node-gyp configure"
+    "install": "node-gyp-build",
+    "configure": "node-gyp configure",
+    "rebuild": "node-gyp rebuild",
+    "prepublish": "prebuildify --napi"
   },
   "dependencies": {
-    "bindings": "^1.3.0",
-    "node-addon-api": "^5.0.0"
+    "node-addon-api": "^5.0.0",
+    "node-gyp-build": "^4.5.0"
   },
   "devDependencies": {
     "@types/node": "^16.0.0"

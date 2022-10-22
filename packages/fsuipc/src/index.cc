@@ -1,6 +1,5 @@
 #include <FSUIPC.h>
 #include <napi.h>
-#include <uv.h>
 
 namespace FSUIPC {
 

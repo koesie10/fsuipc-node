@@ -1,6 +1,5 @@
 #include "FSUIPCWASM.h"
 
-#include <uv.h>
 #include <windows.h>
 
 #include <iostream>
