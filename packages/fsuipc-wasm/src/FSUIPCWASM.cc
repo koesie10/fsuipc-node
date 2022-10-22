@@ -14,16 +14,19 @@ void DebugLog(const char* logString) {
   std::cout << "FSUIPCWASM: " << logString << std::endl;
 }
 
-void ConvertLVarUpdateCallbackData(Napi::Env env, Napi::Function callback, nullptr_t *context, std::map<string, double> *data) {
+void ConvertLVarUpdateCallbackData(Napi::Env env,
+                                   Napi::Function callback,
+                                   nullptr_t* context,
+                                   std::map<string, double>* data) {
   if (env != nullptr && callback != nullptr) {
-      Napi::HandleScope scope(env);
+    Napi::HandleScope scope(env);
 
-      Napi::Object obj = Napi::Object::New(env);
-      for (auto const& [key, val] : *data) {
-        obj.Set(key, val);
-      }
+    Napi::Object obj = Napi::Object::New(env);
+    for (auto const& [key, val] : *data) {
+      obj.Set(key, val);
+    }
 
-      callback.Call(env.Undefined(), {obj});
+    callback.Call(env.Undefined(), {obj});
   }
 
   if (data != nullptr) {
@@ -33,19 +36,20 @@ void ConvertLVarUpdateCallbackData(Napi::Env env, Napi::Function callback, nullp
 }
 
 void FSUIPCWASM::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function ctor =
-      DefineClass(env, "FSUIPCWASM",
-                  {
-                      InstanceMethod<&FSUIPCWASM::Start>("start"),
-                      InstanceMethod<&FSUIPCWASM::Close>("close"),
+  Napi::Function ctor = DefineClass(
+      env, "FSUIPCWASM",
+      {
+          InstanceMethod<&FSUIPCWASM::Start>("start"),
+          InstanceMethod<&FSUIPCWASM::Close>("close"),
 
-                      InstanceAccessor<&FSUIPCWASM::GetLvarValues, nullptr>("lvarValues"),
+          InstanceAccessor<&FSUIPCWASM::GetLvarValues, nullptr>("lvarValues"),
 
-                      InstanceMethod<&FSUIPCWASM::SetLvarUpdateCallback>("setLvarUpdateCallback"),
-                      InstanceMethod<&FSUIPCWASM::FlagLvarForUpdate>("flagLvarForUpdate"),
+          InstanceMethod<&FSUIPCWASM::SetLvarUpdateCallback>(
+              "setLvarUpdateCallback"),
+          InstanceMethod<&FSUIPCWASM::FlagLvarForUpdate>("flagLvarForUpdate"),
 
-                      InstanceMethod<&FSUIPCWASM::SetLvar>("setLvar"),
-                  });
+          InstanceMethod<&FSUIPCWASM::SetLvar>("setLvar"),
+      });
 
   Napi::FunctionReference* constructor = new Napi::FunctionReference();
   *constructor = Napi::Persistent(ctor);
@@ -56,13 +60,14 @@ void FSUIPCWASM::Init(Napi::Env env, Napi::Object exports) {
 }
 
 FSUIPCWASM::FSUIPCWASM(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<FSUIPCWASM>(info), started(false), lvar_update_callback(nullptr) {
+    : Napi::ObjectWrap<FSUIPCWASM>(info),
+      started(false),
+      lvar_update_callback(nullptr) {
   Napi::Env env = info.Env();
 
   // throw an error if constructor is called without new keyword
   if (!info.IsConstructCall()) {
-    throw Napi::Error::New(env,
-                           "FSUIPCWASM.new - called without new keyword");
+    throw Napi::Error::New(env, "FSUIPCWASM.new - called without new keyword");
   }
 
   LOGLEVEL log_level = DISABLE_LOG;
@@ -70,7 +75,7 @@ FSUIPCWASM::FSUIPCWASM(const Napi::CallbackInfo& info)
   if (info.Length() > 0) {
     if (!info[0].IsObject()) {
       throw Napi::TypeError::New(
-        env, "FSUIPCWASM.new: expected first argument to be object");
+          env, "FSUIPCWASM.new: expected first argument to be object");
     }
 
     auto options = info[0].As<Napi::Object>();
@@ -81,8 +86,11 @@ FSUIPCWASM::FSUIPCWASM(const Napi::CallbackInfo& info)
   this->wasmif = WASMIF::GetInstance(&DebugLog);
 
   this->wasmif->setLogLevel(log_level);
-  this->wasmif->registerUpdateCallback(std::bind(&FSUIPCWASM::updateCallback, this));
-  this->wasmif->registerLvarUpdateCallback(std::bind(&FSUIPCWASM::lvarUpdateCallback, this, std::placeholders::_1, std::placeholders::_2));
+  this->wasmif->registerUpdateCallback(
+      std::bind(&FSUIPCWASM::updateCallback, this));
+  this->wasmif->registerLvarUpdateCallback(
+      std::bind(&FSUIPCWASM::lvarUpdateCallback, this, std::placeholders::_1,
+                std::placeholders::_2));
 }
 
 void FSUIPCWASM::updateCallback() {
@@ -154,25 +162,24 @@ Napi::Value FSUIPCWASM::SetLvarUpdateCallback(const Napi::CallbackInfo& info) {
   Napi::HandleScope scope(env);
 
   if (info.Length() != 1) {
-    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvarUpdateCallback: expected 1 argument");
+    throw Napi::TypeError::New(
+        env, "FSUIPCWASM.setLvarUpdateCallback: expected 1 argument");
   }
 
   if (!info[0].IsFunction()) {
-    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvarUpdateCallback: expected argument to be a function");
+    throw Napi::TypeError::New(
+        env,
+        "FSUIPCWASM.setLvarUpdateCallback: expected argument to be a function");
   }
 
   std::lock_guard<std::mutex> guard(this->wasmif_mutex);
 
-  this->lvar_update_callback = Napi::TypedThreadSafeFunction<nullptr_t, std::map<string, double>, ConvertLVarUpdateCallbackData>::New(
-    env,
-    info[0].As<Napi::Function>(),
-    "LvarUpdateCallback",
-    0,
-    1,
-    nullptr,
-    [](Napi::Env, void *, nullptr_t *ctx) {
-    }
-  );
+  this->lvar_update_callback = Napi::TypedThreadSafeFunction<
+      nullptr_t, std::map<string, double>,
+      ConvertLVarUpdateCallbackData>::New(env, info[0].As<Napi::Function>(),
+                                          "LvarUpdateCallback", 0, 1, nullptr,
+                                          [](Napi::Env, void*, nullptr_t* ctx) {
+                                          });
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
 
@@ -186,16 +193,18 @@ Napi::Value FSUIPCWASM::FlagLvarForUpdate(const Napi::CallbackInfo& info) {
   Napi::HandleScope scope(env);
 
   if (info.Length() != 1) {
-    throw Napi::TypeError::New(env, "FSUIPCWASM.flagLvarForUpdate: expected 1 argument");
+    throw Napi::TypeError::New(
+        env, "FSUIPCWASM.flagLvarForUpdate: expected 1 argument");
   }
 
   if (!info[0].IsString()) {
-    throw Napi::TypeError::New(env, "FSUIPCWASM.flagLvarForUpdate: expected argument to be a string");
+    throw Napi::TypeError::New(
+        env, "FSUIPCWASM.flagLvarForUpdate: expected argument to be a string");
   }
 
   std::string lvar_name = info[0].As<Napi::String>().Utf8Value();
 
-  std::lock_guard<std::mutex> guard(this->wasmif_mutex);  
+  std::lock_guard<std::mutex> guard(this->wasmif_mutex);
 
   this->wasmif->flagLvarForUpdateCallback(lvar_name.c_str());
 
@@ -215,17 +224,19 @@ Napi::Value FSUIPCWASM::SetLvar(const Napi::CallbackInfo& info) {
   }
 
   if (!info[0].IsString()) {
-    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvar: expected first argument to be a string");
+    throw Napi::TypeError::New(
+        env, "FSUIPCWASM.setLvar: expected first argument to be a string");
   }
 
   if (!info[1].IsNumber()) {
-    throw Napi::TypeError::New(env, "FSUIPCWASM.setLvar: expected second argument to be a number");
+    throw Napi::TypeError::New(
+        env, "FSUIPCWASM.setLvar: expected second argument to be a number");
   }
 
   std::string lvar_name = info[0].As<Napi::String>().Utf8Value();
   double value = info[1].As<Napi::Number>().DoubleValue();
 
-  std::lock_guard<std::mutex> guard(this->wasmif_mutex);  
+  std::lock_guard<std::mutex> guard(this->wasmif_mutex);
 
   this->wasmif->setLvar(lvar_name.c_str(), value);
 
@@ -247,7 +258,8 @@ void StartAsyncWorker::Execute() {
   }
 
   std::unique_lock lock(this->fsuipcWasm->wasmif_mutex);
-  this->fsuipcWasm->start_cv.wait(lock, [this]{return this->fsuipcWasm->started;});
+  this->fsuipcWasm->start_cv.wait(lock,
+                                  [this] { return this->fsuipcWasm->started; });
 
   lock.unlock();
 }
