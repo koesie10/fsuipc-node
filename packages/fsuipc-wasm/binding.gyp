@@ -5,7 +5,12 @@
             "cflags!": [ "-fno-exceptions" ],
             "cflags_cc!": [ "-fno-exceptions" ],
             "msvs_settings": {
-                "VCCLCompilerTool": { "ExceptionHandling": 1 },
+                "VCCLCompilerTool": {
+                    "AdditionalOptions": [
+                        "-std:c++17"
+                    ],
+                    "ExceptionHandling": 1,
+                },
             },
             "sources": [
                 "src/index.cc",
