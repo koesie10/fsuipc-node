@@ -1,7 +1,6 @@
 // fsuipc.cc
 #include "FSUIPC.h"
 
-#include <uv.h>
 #include <windows.h>
 
 #include <string>
