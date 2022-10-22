@@ -1,6 +1,6 @@
 {
   "name": "fsuipc-wasm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Node bindings for the FSUIPC WASM interface",
   "keywords": [
     "fsuipc",
