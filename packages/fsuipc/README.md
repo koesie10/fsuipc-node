@@ -1,16 +1,10 @@
-# fsuipc-node
+# fsuipc
 > Node bindings to FSUIPC for Windows x64.
-
-This repository contains one package:
-- [`fsuipc`](./packages/fsuipc): Node bindings to FSUIPC for Windows x64.
-
-## [`fsuipc`](./packages/fsuipc/README.md)
-> The `fsuipc` package can be used to read and write data from and to FSUIPC.
 
 [![NPM Version][npm-image]][npm-url]
 [![Downloads Stats][npm-downloads]][npm-url]
 
-### Installation
+## Installation
 
 ```sh
 npm install --save fsuipc
@@ -22,7 +16,7 @@ Or
 yarn add fsuipc
 ```
 
-### Usage example
+## Usage example
 
 ```js
 const fsuipc = require('fsuipc');
@@ -50,19 +44,21 @@ obj.open()
 
 ```
 
-## Meta
+## Release History
 
-Distributed under the MIT license. See ``LICENSE`` for more information.
+This is only provided for historical reasons, for the newest releases see [GitHub releases](https://github.com/koesie10/fsuipc-node/releases).
 
-[https://github.com/koesie10/fsuipc-node](https://github.com/koesie10/fsuipc-node)
-
-## Contributing
-
-1. Fork it (<https://github.com/koesie10/fsuipc-node/fork>)
-2. Create your feature branch (`git checkout -b feature/fooBar`)
-3. Commit your changes (`git commit -am 'Add some fooBar'`)
-4. Push to the branch (`git push origin feature/fooBar`)
-5. Create a new Pull Request
+* 0.4.1:
+    * Limit number of published files
+* 0.4.0:
+    * Add support for requesting a connection to MSFS
+    * Add support for writes
+* 0.3.0
+    * Add support for Node 12.0, drop support for Node < 11.0
+* 0.2.0
+    * Stability improvements
+* 0.1.0
+    * Initial release
 
 <!-- Markdown link & img dfn's -->
 [npm-image]: https://img.shields.io/npm/v/fsuipc.svg?style=flat-square

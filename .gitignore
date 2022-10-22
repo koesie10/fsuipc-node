@@ -322,10 +322,6 @@ PublishScripts/
 
 # NuGet Packages
 *.nupkg
-# The packages folder can be ignored because of Package Restore
-**/packages/*
-# except build/, which is used as an MSBuild target.
-!**/packages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/packages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
@@ -452,6 +448,3 @@ __pycache__/
 
 
 # End of https://www.gitignore.io/api/c++,node,intellij+all,visualstudio,visualstudiocode
-
-/build/
-/test/hello_ts.js
