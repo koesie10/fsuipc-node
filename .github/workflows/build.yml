@@ -32,7 +32,7 @@ jobs:
         uses: koesie10/setup-msfs-sdk@v1
         with:
           url: ${{ secrets.MSFS_SDK_URL }}
-      - name: Setup node-gyp
-        run: yarn global add node-gyp && node-gyp install
       - name: Install Yarn
         run: yarn install
+        env:
+          CHILD_CONCURRENCY: 1
