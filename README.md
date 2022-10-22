@@ -101,6 +101,12 @@ Distributed under the MIT license. See ``LICENSE`` for more information.
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
 
+## Publishing a new version
+
+1. Run `yarn lerna version` to bump the version of all packages
+2. Create a release on GitHub with the new version number
+3. GitHub Actions will automatically publish the new version to NPM
+
 <!-- Markdown link & img dfn's -->
 [fsuipc-npm-image]: https://img.shields.io/npm/v/fsuipc.svg?style=flat-square
 [fsuipc-npm-url]: https://npmjs.org/package/fsuipc

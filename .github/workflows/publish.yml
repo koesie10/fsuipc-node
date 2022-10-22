@@ -35,8 +35,7 @@ jobs:
           CHILD_CONCURRENCY: 1
       - name: Bootstrap Lerna
         run: yarn lerna bootstrap
-      - name: Version and publish
-        run: |
-          yarn lerna publish from-git --yes
+      - name: Publish
+        run: yarn lerna publish from-git --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
