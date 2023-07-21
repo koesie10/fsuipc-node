@@ -1,0 +1,49 @@
+{
+  "name": "fsuipc",
+  "version": "0.6.0",
+  "description": "Node bindings for FSUIPC",
+  "keywords": [
+    "fsuipc",
+    "fsx",
+    "p3d",
+    "msfs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "github:koesie10/fsuipc-node"
+  },
+  "license": "MIT",
+  "main": "./main.js",
+  "types": "./index.d.ts",
+  "files": [
+    "src",
+    "binding.gyp",
+    "index.d.ts",
+    "main.js",
+    "README.md",
+    "prebuilds"
+  ],
+  "scripts": {
+    "build": "node-gyp build",
+    "install": "node-gyp-build",
+    "configure": "node-gyp configure",
+    "rebuild": "node-gyp rebuild",
+    "prepublish": "prebuildify --napi"
+  },
+  "dependencies": {
+    "node-addon-api": "^5.0.0",
+    "node-gyp-build": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=16.0"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}

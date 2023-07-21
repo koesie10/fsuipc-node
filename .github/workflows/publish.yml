@@ -1,0 +1,41 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    environment: production
+    name: Publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Setup MSFS SDK
+        uses: koesie10/setup-msfs-sdk@v1
+        with:
+          url: ${{ secrets.MSFS_SDK_URL }}
+      - name: Install Yarn
+        run: yarn install
+        env:
+          CHILD_CONCURRENCY: 1
+      - name: Bootstrap Lerna
+        run: yarn lerna bootstrap
+      - name: Publish
+        run: yarn lerna publish from-git --yes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
