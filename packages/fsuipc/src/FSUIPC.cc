@@ -340,7 +340,7 @@ void FSUIPC::Write(const Napi::CallbackInfo& info) {
             std::string(info[3].As<Napi::String>().Utf8Value().c_str());
         x = std::stoll(x_str);
       } else if (info[3].IsNumber()) {
-        x = (uint64_t)info[3].ToNumber().Uint32Value();
+        x = info[3].As<Napi::BigInt>().Uint64Value(false);
       } else {
         throw Napi::TypeError::New(env,
                                    "FSUIPC.Write: expected fourth argument to "
