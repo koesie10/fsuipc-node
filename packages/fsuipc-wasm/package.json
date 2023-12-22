@@ -29,14 +29,14 @@
     "prepublish": "prebuildify --napi"
   },
   "dependencies": {
-    "node-addon-api": "^5.0.0",
+    "node-addon-api": "^7.0.0",
     "node-gyp-build": "^4.5.0"
   },
   "devDependencies": {
-    "@types/node": "^16.0.0"
+    "@types/node": "^18.0.0"
   },
   "engines": {
-    "node": ">=16.0"
+    "node": ">=18.0"
   },
   "os": [
     "win32"
