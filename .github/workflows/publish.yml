@@ -33,8 +33,6 @@ jobs:
         run: yarn install
         env:
           CHILD_CONCURRENCY: 1
-      - name: Bootstrap Lerna
-        run: yarn lerna bootstrap
       - name: Publish
         run: yarn lerna publish from-git --yes
         env:
