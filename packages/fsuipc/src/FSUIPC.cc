@@ -313,19 +313,20 @@ void FSUIPC::Write(const Napi::CallbackInfo& info) {
     case Type::Int64: {
       int64_t x;
 
-      if (info[3].IsString()) {
+      if (info[2].IsString()) {
         std::string x_str =
-            std::string(info[3].As<Napi::String>().Utf8Value().c_str());
+            std::string(info[2].As<Napi::String>().Utf8Value().c_str());
         x = std::stoll(x_str);
-      } else if (info[3].IsNumber()) {
-        x = info[3].ToNumber().Int64Value();
-      } else if (info[3].IsBigInt()) {
+      } else if (info[2].IsNumber()) {
+        x = info[2].ToNumber().Int64Value();
+      } else if (info[2].IsBigInt()) {
         bool lossless = false;
-        x = info[3].As<Napi::BigInt>().Int64Value(&lossless);
+        x = info[2].As<Napi::BigInt>().Int64Value(&lossless);
       } else {
-        throw Napi::TypeError::New(env,
-                                   "FSUIPC.Write: expected fourth argument to "
-                                   "be a string or int when type is int64");
+        throw Napi::TypeError::New(
+            env,
+            "FSUIPC.Write: expected third argument to "
+            "be a string, int, or bigint when type is int64");
       }
 
       std::copy(
@@ -338,19 +339,20 @@ void FSUIPC::Write(const Napi::CallbackInfo& info) {
     case Type::UInt64: {
       uint64_t x;
 
-      if (info[3].IsString()) {
+      if (info[2].IsString()) {
         std::string x_str =
-            std::string(info[3].As<Napi::String>().Utf8Value().c_str());
+            std::string(info[2].As<Napi::String>().Utf8Value().c_str());
         x = std::stoll(x_str);
-      } else if (info[3].IsNumber()) {
-        x = info[3].ToNumber().Uint32Value();
-      } else if (info[3].IsBigInt()) {
+      } else if (info[2].IsNumber()) {
+        x = info[2].ToNumber().Uint32Value();
+      } else if (info[2].IsBigInt()) {
         bool lossless = false;
-        x = info[3].As<Napi::BigInt>().Uint64Value(&lossless);
+        x = info[2].As<Napi::BigInt>().Uint64Value(&lossless);
       } else {
-        throw Napi::TypeError::New(env,
-                                   "FSUIPC.Write: expected fourth argument to "
-                                   "be a string or int when type is uint64");
+        throw Napi::TypeError::New(
+            env,
+            "FSUIPC.Write: expected third argument to "
+            "be a string, int, or bigint when type is uint64");
       }
 
       std::copy(
