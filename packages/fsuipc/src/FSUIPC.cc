@@ -69,7 +69,8 @@ Napi::Value FSUIPC::Open(const Napi::CallbackInfo& info) {
 Napi::Value FSUIPC::Close(const Napi::CallbackInfo& info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
 
-  auto worker = new CloseAsyncWorker(info.Env(), deferred, this);
+  auto env = info.Env();
+  auto worker = new CloseAsyncWorker(env, deferred, this);
   worker->Queue();
 
   return deferred.Promise();
@@ -78,7 +79,8 @@ Napi::Value FSUIPC::Close(const Napi::CallbackInfo& info) {
 Napi::Value FSUIPC::Process(const Napi::CallbackInfo& info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
 
-  auto worker = new ProcessAsyncWorker(info.Env(), deferred, this);
+  auto env = info.Env();
+  auto worker = new ProcessAsyncWorker(env, deferred, this);
   worker->Queue();
 
   return deferred.Promise();
