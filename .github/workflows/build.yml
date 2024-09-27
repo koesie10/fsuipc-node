@@ -29,7 +29,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
       - name: Setup MSFS SDK
-        uses: koesie10/setup-msfs-sdk@v1
+        uses: koesie10/setup-msfs-sdk@v2
         with:
           url: ${{ secrets.MSFS_SDK_URL }}
       - name: Install Yarn
